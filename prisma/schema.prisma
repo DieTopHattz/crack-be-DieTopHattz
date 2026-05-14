@@ -67,10 +67,16 @@ model Payment {
   id              String   @id @default(uuid())
   bookingId       String   @unique
   amount          Float
+  currency        String   @default("IDR")
   method          String
   status          String   @default("PENDING")
-  paymentIntentId String?
+  xenditPaymentId String?
+  xenditInvoiceUrl String?
+  xenditPaymentMethodId String?
+  failureReason   String?
+  paidAt          DateTime?
   createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }

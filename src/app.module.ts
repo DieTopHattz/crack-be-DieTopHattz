@@ -4,6 +4,8 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { FerriesModule } from './ferries/ferries.module';
 import { BookingsModule } from './bookings/bookings.module';
+import { PaymentsModule } from './payments/payments.module';
+import { XenditModule } from './xendit/xendit.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { BookingsModule } from './bookings/bookings.module';
     UsersModule,
     FerriesModule,
     BookingsModule,
+    PaymentsModule,
+    XenditModule,
   ],
 })
 export class AppModule {}
