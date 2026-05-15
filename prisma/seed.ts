@@ -44,7 +44,7 @@ async function main() {
       routeFrom: 'Bali (Benoa)',
       routeTo: 'Lombok (Bangsal)',
       departureTime: '09:00',
-      availableDates: ['2025-06-15', '2025-06-16', '2025-06-17', '2025-06-18', '2025-06-19'],
+      availableDates: ['2026-06-15', '2026-06-16', '2026-06-17', '2026-06-18', '2026-06-19'],
       classes: {
         economy: { price: 100000, seats: 150, description: 'Standard seat with AC' },
         business: { price: 250000, seats: 50, description: 'Premium seat with meal' },
@@ -66,7 +66,7 @@ async function main() {
       routeFrom: 'Bali (Padang Bai)',
       routeTo: 'Nusa Penida',
       departureTime: '08:30',
-      availableDates: ['2025-06-15', '2025-06-16', '2025-06-17', '2025-06-18', '2025-06-19'],
+      availableDates: ['2026-06-15', '2026-06-16', '2026-06-17', '2026-06-18', '2026-06-19'],
       classes: {
         economy: { price: 75000, seats: 100, description: 'Standard seat with AC' },
         vip: { price: 150000, seats: 30, description: 'VIP seat with extra legroom' },
@@ -83,7 +83,7 @@ async function main() {
       routeFrom: 'Java (Ketapang)',
       routeTo: 'Bali (Gilimanuk)',
       departureTime: '07:00',
-      availableDates: ['2025-06-15', '2025-06-16', '2025-06-17', '2025-06-18', '2025-06-19'],
+      availableDates: ['2026-06-15', '2026-06-16', '2026-06-17', '2026-06-18', '2026-06-19'],
       classes: {
         economy: { price: 50000, seats: 200, description: 'Standard seat' },
         business: { price: 120000, seats: 80, description: 'Business class with meal' },
@@ -104,7 +104,7 @@ async function main() {
       routeFrom: 'Bali (Padang Bai)',
       routeTo: 'Gili Islands',
       departureTime: '10:00',
-      availableDates: ['2025-06-15', '2025-06-16', '2025-06-17', '2025-06-18', '2025-06-19'],
+      availableDates: ['2026-06-15', '2026-06-16', '2026-06-17', '2026-06-18', '2026-06-19'],
       classes: {
         economy: { price: 125000, seats: 80, description: 'Standard seat' },
         vip: { price: 250000, seats: 20, description: 'VIP seat with snack' },
@@ -121,7 +121,7 @@ async function main() {
       routeFrom: 'Bali (Benoa)',
       routeTo: 'Lombok (Bangsal)',
       departureTime: '14:00',
-      availableDates: ['2025-06-15', '2025-06-16', '2025-06-17', '2025-06-18', '2025-06-19'],
+      availableDates: ['2026-06-15', '2026-06-16', '2026-06-17', '2026-06-18', '2026-06-19'],
       classes: {
         executive: { price: 500000, seats: 30, description: 'Executive suite with bed' },
         vip: { price: 350000, seats: 40, description: 'VIP cabin' },
