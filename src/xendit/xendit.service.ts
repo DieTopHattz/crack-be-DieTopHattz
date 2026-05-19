@@ -7,6 +7,7 @@ import { firstValueFrom } from 'rxjs';
 export class XenditService {
   private readonly baseUrl: string;
   private readonly authHeader: string;
+  private readonly apiVersion: string;
 
   constructor(
     private httpService: HttpService,
@@ -15,124 +16,25 @@ export class XenditService {
     this.baseUrl = 'https://api.xendit.co';
     const secretKey = this.configService.get('XENDIT_SECRET_KEY');
     this.authHeader = `Basic ${Buffer.from(secretKey + ':').toString('base64')}`;
+    this.apiVersion = '2024-11-11';
   }
 
-  async createPaymentRequest(data: {
-    referenceId: string;
-    amount: number;
-    currency?: string;
-    paymentMethodType?: string;
-    successReturnUrl?: string;
-    failureReturnUrl?: string;
-    customer?: any;
-  }) {
-    const {
-      referenceId,
-      amount,
-      currency = 'IDR',
-      paymentMethodType = 'CREDIT_CARD',
-      successReturnUrl,
-      failureReturnUrl,
-      customer,
-    } = data;
-
-    const payload: any = {
-      reference_id: referenceId,
-      currency,
-      amount,
-      type: 'PAYMENT_REQUEST',
-      capture_method: 'MANUAL',
-      channel_code: paymentMethodType === 'CREDIT_CARD' ? 'CARDS' : paymentMethodType,
-      channel_properties: {
-        success_return_url: successReturnUrl || `${this.configService.get('FRONTEND_URL')}/booking/success`,
-        failure_return_url: failureReturnUrl || `${this.configService.get('FRONTEND_URL')}/booking/failed`,
-      },
+  private getHeaders() {
+    return {
+      'Authorization': this.authHeader,
+      'Content-Type': 'application/json',
+      'api-version': this.apiVersion,
     };
-
-    if (customer) {
-      payload.customer = {
-        reference_id: customer.referenceId,
-        email: customer.email,
-        given_names: customer.name,
-        phone_number: customer.phone,
-      };
-    }
-
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post(`${this.baseUrl}/v3/payment_requests`, payload, {
-          headers: {
-            'Authorization': this.authHeader,
-            'Content-Type': 'application/json',
-          },
-        }),
-      );
-      return response.data;
-    } catch (error) {
-      throw new BadRequestException(error.response?.data?.message || 'Failed to create payment request');
-    }
   }
 
-  async capturePayment(paymentId: string, captureAmount?: number) {
-    const payload: any = {
-      final_capture: true,
-    };
-    
-    if (captureAmount) {
-      payload.capture_amount = captureAmount;
-    }
-
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post(`${this.baseUrl}/v3/payments/${paymentId}/capture`, payload, {
-          headers: {
-            'Authorization': this.authHeader,
-            'Content-Type': 'application/json',
-          },
-        }),
-      );
-      return response.data;
-    } catch (error) {
-      throw new BadRequestException(error.response?.data?.message || 'Failed to capture payment');
-    }
-  }
-
-  async getPayment(paymentId: string) {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.get(`${this.baseUrl}/v3/payments/${paymentId}`, {
-          headers: {
-            'Authorization': this.authHeader,
-          },
-        }),
-      );
-      return response.data;
-    } catch (error) {
-      throw new BadRequestException(error.response?.data?.message || 'Failed to get payment');
-    }
-  }
-
-  async getPaymentRequest(paymentRequestId: string) {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.get(`${this.baseUrl}/v3/payment_requests/${paymentRequestId}`, {
-          headers: {
-            'Authorization': this.authHeader,
-          },
-        }),
-      );
-      return response.data;
-    } catch (error) {
-      throw new BadRequestException(error.response?.data?.message || 'Failed to get payment request');
-    }
-  }
-
+  // Method 1: Create Invoice (Simplest, works for all payment methods)
   async createInvoice(data: {
     externalId: string;
     amount: number;
     description: string;
     customerEmail?: string;
     customerName?: string;
+    customerPhone?: string;
     successRedirectUrl?: string;
     failureRedirectUrl?: string;
   }) {
@@ -142,38 +44,129 @@ export class XenditService {
       description,
       customerEmail,
       customerName,
+      customerPhone,
       successRedirectUrl,
       failureRedirectUrl,
     } = data;
 
+    const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+
     const payload: any = {
       external_id: externalId,
-      amount,
-      description,
+      amount: amount,
+      description: description,
       currency: 'IDR',
-      success_redirect_url: successRedirectUrl || `${this.configService.get('FRONTEND_URL')}/booking/success`,
-      failure_redirect_url: failureRedirectUrl || `${this.configService.get('FRONTEND_URL')}/booking/failed`,
+      success_redirect_url: successRedirectUrl || `${frontendUrl}/booking/success`,
+      failure_redirect_url: failureRedirectUrl || `${frontendUrl}/booking/failed`,
     };
 
     if (customerEmail) {
       payload.customer = {
         email: customerEmail,
-        given_names: customerName,
+        given_names: customerName || 'Customer',
+        phone_number: customerPhone || '',
       };
     }
 
     try {
       const response = await firstValueFrom(
         this.httpService.post(`${this.baseUrl}/v2/invoices`, payload, {
-          headers: {
-            'Authorization': this.authHeader,
-            'Content-Type': 'application/json',
-          },
+          headers: this.getHeaders(),
         }),
       );
       return response.data;
     } catch (error) {
       throw new BadRequestException(error.response?.data?.message || 'Failed to create invoice');
+    }
+  }
+
+  // Method 2: Create Payment Request (For direct card payments)
+  async createPaymentRequest(data: {
+    referenceId: string;
+    amount: number;
+    currency?: string;
+    paymentMethod: string;
+    successReturnUrl?: string;
+    failureReturnUrl?: string;
+    customer?: any;
+  }) {
+    const {
+      referenceId,
+      amount,
+      currency = 'IDR',
+      paymentMethod,
+      successReturnUrl,
+      failureReturnUrl,
+      customer,
+    } = data;
+
+    const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+
+    // Map payment method to Xendit channel code
+    const channelCodeMap: Record<string, string> = {
+      'CREDIT_CARD': 'CARDS',
+      'BANK_TRANSFER': 'BCA',
+      'BCA': 'BCA',
+      'MANDIRI': 'MANDIRI',
+      'BRI': 'BRI',
+      'BNI': 'BNI',
+      'OVO': 'OVO',
+      'DANA': 'DANA',
+      'QRIS': 'QRIS',
+      'LINKAJA': 'LINKAJA',
+    };
+
+    const channelCode = channelCodeMap[paymentMethod] || 'CARDS';
+
+    const payload: any = {
+      reference_id: referenceId,
+      currency: currency,
+      amount: amount,
+      type: 'PAYMENT_REQUEST',
+      channel_code: channelCode,
+      channel_properties: {
+        success_return_url: successReturnUrl || `${frontendUrl}/booking/success`,
+        failure_return_url: failureReturnUrl || `${frontendUrl}/booking/failed`,
+      },
+    };
+
+    // Add customer if provided
+    if (customer) {
+      payload.customer = {
+        reference_id: customer.referenceId,
+        email: customer.email,
+        given_names: customer.name,
+        phone_number: customer.phone,
+      };
+    }
+
+    // Add e-wallet specific properties
+    if (channelCode === 'OVO' || channelCode === 'DANA') {
+      payload.channel_properties.mobile_number = customer?.phone || '+6281234567890';
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(`${this.baseUrl}/v3/payment_requests`, payload, {
+          headers: this.getHeaders(),
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      throw new BadRequestException(error.response?.data?.message || 'Failed to create payment request');
+    }
+  }
+
+  async getInvoice(invoiceId: string) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${this.baseUrl}/v2/invoices/${invoiceId}`, {
+          headers: this.getHeaders(),
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      throw new BadRequestException(error.response?.data?.message || 'Failed to get invoice');
     }
   }
 
