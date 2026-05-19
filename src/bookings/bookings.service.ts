@@ -10,14 +10,32 @@ export class BookingsService {
     // Generate unique booking ID
     const bookingId = `FRY-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
+    // Calculate total amount
     const totalAmount = (createBookingDto.classPrice * createBookingDto.passengerCount) 
       + (createBookingDto.vehicleFee || 0);
 
+    // Convert departureDate string to Date object
+    const departureDate = new Date(createBookingDto.departureDate);
+    
+    // Check if date is valid
+    if (isNaN(departureDate.getTime())) {
+      throw new Error('Invalid departure date');
+    }
+
+    // Create booking in database
     const booking = await this.prisma.booking.create({
       data: {
         bookingId,
         userId,
-        ...createBookingDto,
+        shipId: createBookingDto.shipId,
+        selectedClass: createBookingDto.selectedClass,
+        classPrice: createBookingDto.classPrice,
+        passengerCount: createBookingDto.passengerCount,
+        passengerDetails: createBookingDto.passengerDetails,
+        bookerDetails: createBookingDto.bookerDetails,
+        vehicleType: createBookingDto.vehicleType || null,
+        vehicleFee: createBookingDto.vehicleFee || null,
+        departureDate: departureDate,
         totalAmount,
         status: 'CONFIRMED',
       },
