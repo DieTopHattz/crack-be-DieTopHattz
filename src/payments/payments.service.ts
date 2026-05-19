@@ -29,6 +29,20 @@ export class PaymentsService {
       throw new NotFoundException('Booking not found');
     }
 
+    // CHECK IF PAYMENT ALREADY EXISTS
+    const existingPayment = await this.prisma.payment.findUnique({
+      where: { bookingId: bookingId },
+    });
+
+    if (existingPayment) {
+      this.logger.log(`Payment already exists for booking ${bookingId}, returning existing invoice`);
+      return {
+        paymentId: existingPayment.id,
+        checkoutUrl: existingPayment.xenditInvoiceUrl,
+        invoiceId: existingPayment.xenditPaymentId,
+      };
+    }
+
     // Extract booker details
     const bookerDetails = booking.bookerDetails as any;
     const customerName = bookerDetails?.name || booking.user?.name || 'Customer';
@@ -36,7 +50,7 @@ export class PaymentsService {
     const customerPhone = bookerDetails?.phone || '';
 
     try {
-      // Create invoice via Xendit (most reliable method)
+      // Create invoice via Xendit
       const invoice = await this.xenditService.createInvoice({
         externalId: `BOOKING-${booking.bookingId}`,
         amount: amount,
